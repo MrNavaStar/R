@@ -3,6 +3,9 @@ plugins {
     id "maven-publish"
 }
 
+version = project.version
+group = project.group
+
 tasks.withType(JavaCompile) {
     options.encoding = "UTF-8"
 }
@@ -20,8 +23,8 @@ publishing {
     }
     publications {
         mavenJava(MavenPublication) {
-            groupId = "me.mrnavastar.R"
-            artifactId = project.name
+            groupId = "me.mrnavastar"
+            artifactId = "r"
             from components.java
         }
     }
