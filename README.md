@@ -9,13 +9,13 @@ The Jolliest Java Reflection Library on the 7 Seas.
 Java reflection is often a treacherous journey filled with sharks and scallywags. Let R help you navigate your way through Davy Jones Locker.
 
 ### O Captain! My Captain!
-To Begin your journey, you need to wrap the object you want to plunder (reflect):
+To begin your journey, you need to wrap the object you want to plunder (reflect):
 ```java
 R reflector = R.of(myPoorObject);
 ```
 
 ### Plunder The Booty!
-With our treasure secured, its time to dig in:
+With our treasure secured, its time to show those landlubbers a real buccaneer:
 ```java
 // To get the value from a field (can be a private or a parent class field)
 reflector.get("someField", Type.class);
@@ -26,4 +26,4 @@ reflector.call("myFunction", ReturnType.class, param1, param2 ...);
 ```
 
 ### Avast Ye!
-Now that you've got your sea legs and are rolling in doubloons, be sure to pluder with care. Remember... dead men tell no tales.
+Now that you've got your sea legs and are rolling in doubloons, be sure to loot with care. Remember... dead men tell no tales.
