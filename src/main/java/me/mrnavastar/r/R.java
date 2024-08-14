@@ -1,4 +1,4 @@
-package me.mrnavastar.singularity.loader.util;
+package me.mrnavastar.r;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;

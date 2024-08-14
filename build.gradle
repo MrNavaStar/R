@@ -1,0 +1,29 @@
+plugins {
+    id "java"
+    id "maven-publish"
+}
+
+tasks.withType(JavaCompile) {
+    options.encoding = "UTF-8"
+    options.release = 8
+}
+
+publishing {
+    repositories {
+        maven {
+            name "MrNavaStar"
+            url "https://maven.mrnavastar.rocks/releases"
+            credentials {
+                username = System.getenv("MAVEN_NAME")
+                password = System.getenv("MAVEN_SECRET")
+            }
+        }
+    }
+    publications {
+        mavenJava(MavenPublication) {
+            groupId = "me.mrnavastar.R"
+            artifactId = project.name
+            from components.java
+        }
+    }
+}
