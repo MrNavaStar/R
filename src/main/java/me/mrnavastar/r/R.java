@@ -87,8 +87,9 @@ public class R {
     }
 
     public Class<?>[] generics() {
-        if (clazz.getGenericSuperclass() instanceof ParameterizedType type) {
-            return Arrays.stream(type.getActualTypeArguments()).map(t -> {
+        Type generic = clazz.getGenericSuperclass();
+        if (generic instanceof ParameterizedType) {
+            return Arrays.stream(((ParameterizedType) generic).getActualTypeArguments()).map(t -> {
                 try {
                     return Class.forName(t.getTypeName());
                 } catch (ClassNotFoundException e) {
