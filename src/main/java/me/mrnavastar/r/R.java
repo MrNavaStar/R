@@ -1,8 +1,6 @@
 package me.mrnavastar.r;
 
-import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
+import java.lang.reflect.*;
 import java.util.Arrays;
 
 public class R {
@@ -86,5 +84,18 @@ public class R {
     public R call(String name, Object... args) {
         call(name, null, args);
         return this;
+    }
+
+    public Class<?>[] generics() {
+        if (clazz.getGenericSuperclass() instanceof ParameterizedType type) {
+            return Arrays.stream(type.getActualTypeArguments()).map(t -> {
+                try {
+                    return Class.forName(t.getTypeName());
+                } catch (ClassNotFoundException e) {
+                    throw new RuntimeException(e);
+                }
+            }).toArray(Class[]::new);
+        }
+        return null;
     }
 }
