@@ -17,7 +17,7 @@ repositories {
 }
 
 dependencies {
-    implementation "me.mrnavastar:r:1.0.0"
+    implementation "me.mrnavastar:r:1.0.2"
 }
 ```
 
@@ -36,6 +36,9 @@ reflector.get("someField", Type.class);
 reflector.set("someField", myValue);
 // To call a function (can be a private or a parent class function)
 reflector.call("myFunction", ReturnType.class, param1, param2 ...);
+
+// Get type params
+reflector.generics();
 ```
 
 ### Avast Ye!
