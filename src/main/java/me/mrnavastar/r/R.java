@@ -8,13 +8,24 @@ import java.util.Arrays;
 public class R {
 
     private final Object instance;
+    private final Class<?> clazz;
 
     public R(Object instance) {
         this.instance = instance;
+        clazz = instance.getClass();
+    }
+
+    public R(Class<?> clazz) {
+        instance = null;
+        this.clazz = clazz;
     }
 
     public static R of(Object instance) {
         return new R(instance);
+    }
+
+    public static R of(Class<?> clazz) {
+        return new R(clazz);
     }
 
     // Search super classes for field
@@ -47,7 +58,7 @@ public class R {
 
     public <T> T get(String name, Class<T> type) {
         try {
-            return type.cast(findField(instance.getClass(), name).get(instance));
+            return type.cast(findField(clazz, name).get(instance));
         } catch (IllegalAccessException | NoSuchFieldException e) {
             throw new RuntimeException(e);
         }
@@ -55,7 +66,7 @@ public class R {
 
     public void set(String name, Object value) {
         try {
-            findField(instance.getClass(), name).set(instance, value);
+            findField(clazz, name).set(instance, value);
         } catch (NoSuchFieldException | IllegalAccessException e) {
             throw new RuntimeException(e);
         }
@@ -64,7 +75,7 @@ public class R {
     public <T> T call(String name, Class<T> returnType, Object... args) {
         try {
             Class<?>[] classes = Arrays.stream(args).map(Object::getClass).toArray(Class[]::new);
-            Object returnVal = findMethod(instance.getClass(), name, classes).invoke(instance, args);
+            Object returnVal = findMethod(clazz, name, classes).invoke(instance, args);
             if (returnVal == null || returnType == null) return null;
             return returnType.cast(returnVal);
         } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
