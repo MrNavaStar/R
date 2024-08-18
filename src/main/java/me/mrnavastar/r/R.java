@@ -2,6 +2,7 @@ package me.mrnavastar.r;
 
 import java.lang.reflect.*;
 import java.util.Arrays;
+import java.util.Objects;
 
 public class R {
 
@@ -114,9 +115,11 @@ public class R {
                 try {
                     return Class.forName(t.getTypeName());
                 } catch (ClassNotFoundException e) {
-                    throw new RuntimeException(e);
+                    return null;
                 }
-            }).toArray(Class[]::new);
+            })
+            .filter(Objects::nonNull)
+            .toArray(Class[]::new);
         }
         return new Class[]{};
     }
