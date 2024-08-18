@@ -17,7 +17,4 @@ jobs:
         run: sed -i 's/debug-build/${{ github.event.release.tag_name }}/g' gradle.properties
 
       - name: Build & Publish
-        run: ./gradlew build publish
-        env:
-          MAVEN_NAME: ${{ secrets.MAVEN_NAME }}
-          MAVEN_SECRET: ${{ secrets.MAVEN_SECRET }}
+        run: ./gradlew build publish && ./gradlew jreleaserFullRelease

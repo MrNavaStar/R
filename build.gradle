@@ -1,6 +1,7 @@
 plugins {
     id "java"
-    id "maven-publish"
+    id 'maven-publish'
+    id 'org.jreleaser' version '1.13.1'
 }
 
 version = project.version
@@ -10,22 +11,66 @@ tasks.withType(JavaCompile) {
     options.encoding = "UTF-8"
 }
 
+java {
+    javadoc.options.addStringOption('Xdoclint:none', '-quiet')
+    withJavadocJar()
+    withSourcesJar()
+}
+
 publishing {
-    repositories {
-        maven {
-            name "MrNavaStar"
-            url "https://maven.mrnavastar.rocks/releases"
-            credentials {
-                username = System.getenv("MAVEN_NAME")
-                password = System.getenv("MAVEN_SECRET")
+    publications {
+        maven(MavenPublication) {
+            groupId = 'me.mrnavastar'
+            artifactId = 'r'
+            from components.java
+
+            pom {
+                name = 'R'
+                description = 'The Jolliest Java Reflection Library on the 7 Seas'
+                url = 'https://github.com/MrNavaStar/R'
+                inceptionYear = '2024'
+                licenses {
+                    license {
+                        name = 'CC0-1.0'
+                        url = 'https://creativecommons.org/publicdomain/zero/1.0/legalcode.en'
+                    }
+                }
+                developers {
+                    developer {
+                        id = 'mrnavastar'
+                        name = 'MrNavaStar'
+                    }
+                }
+                scm {
+                    connection = 'scm:git:https://github.com/MrNavaStar/R.git'
+                    developerConnection = 'scm:git:ssh://github.com/MrNavaStar/R.git'
+                    url = 'http://github.com/MrNavaStar/R'
+                }
             }
         }
     }
-    publications {
-        mavenJava(MavenPublication) {
-            groupId = "me.mrnavastar"
-            artifactId = "r"
-            from components.java
+
+    repositories {
+        maven {
+            url = layout.buildDirectory.dir('staging-deploy')
+        }
+    }
+}
+
+jreleaser {
+    signing {
+        active = 'ALWAYS'
+        armored = true
+    }
+    deploy {
+        maven {
+            mavenCentral {
+                sonatype {
+                    active = 'ALWAYS'
+                    url = 'https://central.sonatype.com/api/v1/publisher'
+                    stagingRepository('target/staging-deploy')
+                }
+            }
         }
     }
 }
