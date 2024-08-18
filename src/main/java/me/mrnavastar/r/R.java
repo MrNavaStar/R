@@ -118,6 +118,6 @@ public class R {
                 }
             }).toArray(Class[]::new);
         }
-        return null;
+        return new Class[]{};
     }
 }
