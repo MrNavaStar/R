@@ -12,12 +12,10 @@ Java reflection is often a treacherous journey filled with sharks and scallywags
 ### Sail, Ho!
 Before leaving on your adventure, be sure to pack R aboard your ship:
 ```gradle
-repositories {
-    maven { url "https://maven.mrnavastar.rocks/releases" }
-}
+// We are on Maven Central
 
 dependencies {
-    implementation "me.mrnavastar:r:1.0.2"
+    implementation "me.mrnavastar:r:1.0.3"
 }
 ```
 
