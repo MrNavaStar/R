@@ -109,6 +109,8 @@ public class R {
      * Get a list of the generic type params of a class
      */
     public Class<?>[] generics() {
+        if (clazz.isEnum()) return new Class[]{};   // Enums cant have generics
+
         Type generic = clazz.getGenericSuperclass();
         if (generic instanceof ParameterizedType) {
             return Arrays.stream(((ParameterizedType) generic).getActualTypeArguments()).map(t -> {
