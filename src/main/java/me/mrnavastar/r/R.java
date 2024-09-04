@@ -82,12 +82,13 @@ public class R {
     /**
      * Set the value of a field. Can be private, final, or static
      */
-    public void set(String name, Object value) {
+    public R set(String name, Object value) {
         try {
             findField(name, clazz).set(instance, value);
         } catch (NoSuchFieldException | IllegalAccessException e) {
             throw new RuntimeException(e);
         }
+        return this;
     }
 
     /**
