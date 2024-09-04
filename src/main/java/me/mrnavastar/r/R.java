@@ -33,29 +33,36 @@ public class R {
         return new R(clazz);
     }
 
+    /**
+     * Create an instance of {@link R} from a field in another {@link R} instance
+     */
+    public R of(String name, Class<?> type) {
+        return R.of(get(name, type));
+    }
+
     // Search super classes for field
-    private Field findField(Class<?> clazz, String name) throws NoSuchFieldException {
+    private Field findField(String name, Class<?> clazz) throws NoSuchFieldException {
         if (clazz == null) throw new NoSuchFieldException();
 
         Field field;
         try {
             field = clazz.getDeclaredField(name);
         } catch (NoSuchFieldException e) {
-            field = findField(clazz.getSuperclass(), name);
+            field = findField(name, clazz.getSuperclass());
         }
         field.setAccessible(true);
         return field;
     }
 
     // Search super classes for methods
-    private Method findMethod(Class<?> clazz, String name, Class<?>[] argTypes) throws NoSuchMethodException {
+    private Method findMethod(String name, Class<?> clazz, Class<?>[] argTypes) throws NoSuchMethodException {
         if (clazz == null) throw new NoSuchMethodException();
 
         Method method;
         try {
             method = clazz.getDeclaredMethod(name, argTypes);
         } catch (NoSuchMethodException e) {
-            method = findMethod(clazz.getSuperclass(), name, argTypes);
+            method = findMethod(name, clazz.getSuperclass(), argTypes);
         }
         method.setAccessible(true);
         return method;
@@ -66,7 +73,7 @@ public class R {
      */
     public <T> T get(String name, Class<T> type) {
         try {
-            return type.cast(findField(clazz, name).get(instance));
+            return type.cast(findField(name, clazz).get(instance));
         } catch (IllegalAccessException | NoSuchFieldException e) {
             throw new RuntimeException(e);
         }
@@ -77,7 +84,7 @@ public class R {
      */
     public void set(String name, Object value) {
         try {
-            findField(clazz, name).set(instance, value);
+            findField(name, clazz).set(instance, value);
         } catch (NoSuchFieldException | IllegalAccessException e) {
             throw new RuntimeException(e);
         }
@@ -89,7 +96,7 @@ public class R {
     public <T> T call(String name, Class<T> returnType, Object... args) {
         try {
             Class<?>[] classes = Arrays.stream(args).map(Object::getClass).toArray(Class[]::new);
-            Object returnVal = findMethod(clazz, name, classes).invoke(instance, args);
+            Object returnVal = findMethod(name, clazz, classes).invoke(instance, args);
             if (returnVal == null || returnType == null) return null;
             return returnType.cast(returnVal);
         } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
