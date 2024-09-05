@@ -40,4 +40,4 @@ reflector.generics();
 ```
 
 ### Avast Ye!
-Now that you've got your sea legs and are rolling in doubloons, be sure to loot with care. Remember... dead men tell no tales.
+Now that you've got your sea legs and are rolling in doubloons, be sure to loot with caution. Remember... dead men tell no tales.
