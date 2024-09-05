@@ -36,8 +36,12 @@ public class R {
     /**
      * Create an instance of {@link R} from a field in another {@link R} instance
      */
-    public R of(String name, Class<?> type) {
-        return R.of(get(name, type));
+    public R of(String name) {
+        try {
+            return R.of(findField(name, clazz).get(instance));
+        } catch (IllegalAccessException | NoSuchFieldException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     // Search super classes for field
