@@ -22,6 +22,8 @@ dependencies {
 ### O Captain! My Captain!
 Now that were off, you need to wrap the object you want to plunder (reflect):
 ```java
+import me.mrnavastar.r.R;
+
 R reflector = R.of(myPoorObject);
 // You can also chain .of() calls on fields inside the object you just wrapped:
 R reflector = R.of(myPoorObject).of("somePoorField");
