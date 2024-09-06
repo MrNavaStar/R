@@ -15,7 +15,7 @@ Before leaving on your adventure, be sure to pack R aboard your ship:
 // We are on Maven Central
 
 dependencies {
-    implementation "me.mrnavastar:r:1.0.3"
+    implementation "me.mrnavastar:r:1.0.8"
 }
 ```
 
