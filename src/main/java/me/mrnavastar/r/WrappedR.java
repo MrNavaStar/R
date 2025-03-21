@@ -25,6 +25,9 @@ public class WrappedR {
         return new WrappedR(r, handler);
     }
 
+    /**
+     * Create a new instance of the wrapped class
+     */
     public Optional<Object> construct(Object... args) {
         try {
             return Optional.of(r.construct(args));
