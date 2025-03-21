@@ -6,23 +6,22 @@ import java.util.Objects;
 
 public class R {
 
-    private static boolean oldJavaCompat = false;
+    private static boolean oldJavaCompat = true;
     static {
-        try {
-            Field.class.getDeclaredField("modifiers");
-            oldJavaCompat = true;
-        } catch (NoSuchFieldException ignore) {}
+        R.of(Field.class)
+                .handleError(((r, e) -> oldJavaCompat = false))
+                .get("modifiers", Object.class);
     }
 
-    private final Object instance;
-    private final Class<?> clazz;
+    private Object instance;
+    private Class<?> clazz;
 
-    public R(Object instance) {
+    private R(Object instance) {
         this.instance = instance;
         clazz = instance.getClass();
     }
 
-    public R(Class<?> clazz) {
+    private R(Class<?> clazz) {
         instance = null;
         this.clazz = clazz;
     }
@@ -52,6 +51,14 @@ public class R {
         }
     }
 
+    public WrappedR noThrow() {
+        return new WrappedR(this, (r, e) -> {});
+    }
+
+    public WrappedR handleError(WrappedR.ErrorHandler handler) {
+        return new WrappedR(this, handler);
+    }
+
     // Search super classes for field
     private Field findField(String name, Class<?> clazz) throws NoSuchFieldException {
         if (clazz == null) throw new NoSuchFieldException();
@@ -78,6 +85,21 @@ public class R {
         }
         method.setAccessible(true);
         return method;
+    }
+
+    private Class<?>[] getArgTypes(Object[] args) {
+        return Arrays.stream(args).map(Object::getClass).toArray(Class[]::new);
+    }
+
+    /**
+     * Create a new instance of the wrapped class
+     */
+    public Object construct(Object... args) {
+        try {
+            return clazz.getDeclaredConstructor(getArgTypes(args)).newInstance(args);
+        } catch (NoSuchMethodException | InvocationTargetException | InstantiationException | IllegalAccessException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     /**
@@ -113,8 +135,7 @@ public class R {
      */
     public <T> T call(String name, Class<T> returnType, Object... args) {
         try {
-            Class<?>[] classes = Arrays.stream(args).map(Object::getClass).toArray(Class[]::new);
-            Object returnVal = findMethod(name, clazz, classes).invoke(instance, args);
+            Object returnVal = findMethod(name, clazz, getArgTypes(args)).invoke(instance, args);
             if (returnVal == null || returnType == null) return null;
             return returnType.cast(returnVal);
         } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
