@@ -1,6 +1,7 @@
 package me.mrnavastar.r;
 
 import java.lang.reflect.*;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Objects;
 
@@ -16,6 +17,7 @@ public class R {
 
     private final Object instance;
     private final Class<?> clazz;
+    private final ArrayList<Class<?>> interfaces = new ArrayList<>();
 
     public R(Object instance) {
         this.instance = instance;
@@ -42,9 +44,12 @@ public class R {
     }
 
     /**
-     * Create an instance of {@link R} from a field in another {@link R} instance
+     * Create an instance of {@link R} from a class name or a field in this instance
      */
     public R of(String name) {
+        try {
+            return R.of(Class.forName(name));
+        } catch (ClassNotFoundException ignore) {}
         try {
             return R.of(findField(name, clazz).get(instance));
         } catch (IllegalAccessException | NoSuchFieldException e) {
@@ -108,18 +113,22 @@ public class R {
         return this;
     }
 
+    private Object callAndReturn(String name, Object... args) {
+        try {
+            Class<?>[] classes = Arrays.stream(args).map(Object::getClass).toArray(Class[]::new);
+            return findMethod(name, clazz, classes).invoke(instance, args);
+        } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     /**
      * Invoke a function with a return type
      */
     public <T> T call(String name, Class<T> returnType, Object... args) {
-        try {
-            Class<?>[] classes = Arrays.stream(args).map(Object::getClass).toArray(Class[]::new);
-            Object returnVal = findMethod(name, clazz, classes).invoke(instance, args);
-            if (returnVal == null || returnType == null) return null;
-            return returnType.cast(returnVal);
-        } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
-            throw new RuntimeException(e);
-        }
+        Object returnVal = callAndReturn(name, args);
+        if (returnVal == null || returnType == null) return null;
+        return returnType.cast(returnVal);
     }
 
     /**
@@ -127,6 +136,26 @@ public class R {
      */
     public R call(String name, Object... args) {
         call(name, null, args);
+        return this;
+    }
+
+    /**
+     * implement an interface on this instance
+     */
+    public R implement(Class<?> iface) {
+        interfaces.add(iface);
+        return this;
+    }
+
+    /**
+     * implement an interface on this instance by class name
+     */
+    public R implement(String iface) {
+        try {
+            implement(Class.forName(iface));
+        } catch (ClassNotFoundException e) {
+            throw new RuntimeException(e);
+        }
         return this;
     }
 
@@ -149,5 +178,12 @@ public class R {
             .toArray(Class[]::new);
         }
         return new Class[]{};
+    }
+
+    /**
+     * Instantiates an object that implements all the interfaces injected by {@link me.mrnavastar.r.R#implement(Class)}
+     */
+    public Object interfaceable() {
+        return Proxy.newProxyInstance(R.class.getClassLoader(), interfaces.toArray(new Class[]{}), (proxy, method, args) -> callAndReturn(method.getName(), args));
     }
 }
