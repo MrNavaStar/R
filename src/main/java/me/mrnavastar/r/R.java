@@ -4,6 +4,7 @@ import java.lang.reflect.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class R {
 
@@ -14,6 +15,8 @@ public class R {
             oldJavaCompat = true;
         } catch (NoSuchFieldException ignore) {}
     }
+
+    private static final ConcurrentHashMap<String, Method> methodCache = new ConcurrentHashMap<>();
 
     private final Object instance;
     private final Class<?> clazz;
@@ -59,7 +62,7 @@ public class R {
 
     // Search super classes for field
     private Field findField(String name, Class<?> clazz) throws NoSuchFieldException {
-        if (clazz == null) throw new NoSuchFieldException();
+        if (clazz == null) throw new RuntimeException("no field with name: " + name);
 
         Field field;
         try {
@@ -72,8 +75,8 @@ public class R {
     }
 
     // Search super classes for methods
-    private Method findMethod(String name, Class<?> clazz, Class<?>[] argTypes) throws NoSuchMethodException {
-        if (clazz == null) throw new NoSuchMethodException();
+    private Method findMethod(String name, Class<?> clazz, Class<?>[] argTypes) {
+        if (clazz == null) throw new RuntimeException("no method with name: " + name + " and args: " + Arrays.toString(argTypes));
 
         Method method;
         try {
@@ -116,8 +119,10 @@ public class R {
     private Object callAndReturn(String name, Object... args) {
         try {
             Class<?>[] classes = Arrays.stream(args).map(Object::getClass).toArray(Class[]::new);
-            return findMethod(name, clazz, classes).invoke(instance, args);
-        } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
+            StringBuilder cacheKey = new StringBuilder(instance.getClass().getName() + name);
+            for (Class<?> clazz : classes) cacheKey.append(clazz.getName());
+            return methodCache.computeIfAbsent(cacheKey.toString(), key -> findMethod(name, clazz, classes)).invoke(instance, args);
+        } catch (IllegalAccessException | InvocationTargetException e) {
             throw new RuntimeException(e);
         }
     }
