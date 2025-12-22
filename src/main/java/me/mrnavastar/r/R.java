@@ -16,6 +16,7 @@ public class R {
         } catch (NoSuchFieldException ignore) {}
     }
 
+    private static final ConcurrentHashMap<String, Method> fieldCache = new ConcurrentHashMap<>();
     private static final ConcurrentHashMap<String, Method> methodCache = new ConcurrentHashMap<>();
 
     private final Object instance;
@@ -78,14 +79,18 @@ public class R {
     private Method findMethod(String name, Class<?> clazz, Class<?>[] argTypes) {
         if (clazz == null) throw new RuntimeException("no method with name: " + name + " and args: " + Arrays.toString(argTypes));
 
-        Method method;
-        try {
-            method = clazz.getDeclaredMethod(name, argTypes);
-        } catch (NoSuchMethodException e) {
-            method = findMethod(name, clazz.getSuperclass(), argTypes);
-        }
-        method.setAccessible(true);
-        return method;
+        StringBuilder cacheKey = new StringBuilder(instance.getClass().getName() + name);
+        for (Class<?> arg : argTypes) cacheKey.append(arg.getName());
+
+        return methodCache.computeIfAbsent(cacheKey.toString(), key -> {
+            try {
+                Method m = clazz.getDeclaredMethod(name, argTypes);
+                m.setAccessible(true);
+                return m;
+            } catch (NoSuchMethodException e) {
+                return findMethod(name, clazz.getSuperclass(), argTypes);
+            }
+        });
     }
 
     /**
@@ -119,9 +124,7 @@ public class R {
     private Object callAndReturn(String name, Object... args) {
         try {
             Class<?>[] classes = Arrays.stream(args).map(Object::getClass).toArray(Class[]::new);
-            StringBuilder cacheKey = new StringBuilder(instance.getClass().getName() + name);
-            for (Class<?> clazz : classes) cacheKey.append(clazz.getName());
-            return methodCache.computeIfAbsent(cacheKey.toString(), key -> findMethod(name, clazz, classes)).invoke(instance, args);
+            return findMethod(name, clazz, classes).invoke(instance, args);
         } catch (IllegalAccessException | InvocationTargetException e) {
             throw new RuntimeException(e);
         }
