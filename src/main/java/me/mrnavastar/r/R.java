@@ -16,7 +16,7 @@ public class R {
         } catch (NoSuchFieldException ignore) {}
     }
 
-    private static final ConcurrentHashMap<String, Method> fieldCache = new ConcurrentHashMap<>();
+    private static final ConcurrentHashMap<String, Field> fieldCache = new ConcurrentHashMap<>();
     private static final ConcurrentHashMap<String, Method> methodCache = new ConcurrentHashMap<>();
 
     private final Object instance;
@@ -56,30 +56,31 @@ public class R {
         } catch (ClassNotFoundException ignore) {}
         try {
             return R.of(findField(name, clazz).get(instance));
-        } catch (IllegalAccessException | NoSuchFieldException e) {
+        } catch (IllegalAccessException e) {
             throw new RuntimeException(e);
         }
     }
 
     // Search super classes for field
-    private Field findField(String name, Class<?> clazz) throws NoSuchFieldException {
+    private Field findField(String name, Class<?> clazz) {
         if (clazz == null) throw new RuntimeException("no field with name: " + name);
 
-        Field field;
-        try {
-            field = clazz.getDeclaredField(name);
-        } catch (NoSuchFieldException e) {
-            field = findField(name, clazz.getSuperclass());
-        }
-        field.setAccessible(true);
-        return field;
+        return fieldCache.computeIfAbsent(this.clazz.getName() + name, key -> {
+            try {
+                Field f = clazz.getDeclaredField(name);
+                f.setAccessible(true);
+                return f;
+            } catch (NoSuchFieldException e) {
+                return findField(name, clazz.getSuperclass());
+            }
+        });
     }
 
     // Search super classes for methods
     private Method findMethod(String name, Class<?> clazz, Class<?>[] argTypes) {
         if (clazz == null) throw new RuntimeException("no method with name: " + name + " and args: " + Arrays.toString(argTypes));
 
-        StringBuilder cacheKey = new StringBuilder(instance.getClass().getName() + name);
+        StringBuilder cacheKey = new StringBuilder(this.clazz.getName() + name);
         for (Class<?> arg : argTypes) cacheKey.append(arg.getName());
 
         return methodCache.computeIfAbsent(cacheKey.toString(), key -> {
@@ -99,7 +100,7 @@ public class R {
     public <T> T get(String name, Class<T> type) {
         try {
             return type.cast(findField(name, clazz).get(instance));
-        } catch (IllegalAccessException | NoSuchFieldException e) {
+        } catch (IllegalAccessException e) {
             throw new RuntimeException(e);
         }
     }
@@ -115,7 +116,7 @@ public class R {
                 modifiersField.setInt(toSet, toSet.getModifiers() & ~java.lang.reflect.Modifier.FINAL);
             }
             toSet.set(instance, value);
-        } catch (NoSuchFieldException | IllegalAccessException e) {
+        } catch (IllegalAccessException e) {
             throw new RuntimeException(e);
         }
         return this;
