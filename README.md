@@ -17,7 +17,7 @@ repositories {
 }
 
 dependencies {
-    implementation "me.mrnavastar:r:1.0.9"
+    implementation "me.mrnavastar:r:1.1.0"
 }
 ```
 
