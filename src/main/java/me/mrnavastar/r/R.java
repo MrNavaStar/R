@@ -1,7 +1,6 @@
 package me.mrnavastar.r;
 
 import java.lang.reflect.*;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
@@ -21,7 +20,6 @@ public class R {
 
     private final Object instance;
     private final Class<?> clazz;
-    private final ArrayList<Class<?>> interfaces = new ArrayList<>();
 
     public R(Object instance) {
         this.instance = instance;
@@ -122,9 +120,13 @@ public class R {
         return this;
     }
 
+    //TODO: The way proxies are implemented means you can't call a function that takes a proxy as an arg (but maybe that doesn't matter?)
     private Object callAndReturn(String name, Object... args) {
         try {
-            Class<?>[] classes = Arrays.stream(args).map(Object::getClass).toArray(Class[]::new);
+            Class<?>[] classes = Arrays.stream(args).map(object -> {
+                if (object instanceof Proxy) return object.getClass().getInterfaces()[0];
+                return object.getClass();
+            }).toArray(Class[]::new);
             return findMethod(name, clazz, classes).invoke(instance, args);
         } catch (IllegalAccessException | InvocationTargetException e) {
             throw new RuntimeException(e);
@@ -145,26 +147,6 @@ public class R {
      */
     public R call(String name, Object... args) {
         call(name, null, args);
-        return this;
-    }
-
-    /**
-     * implement an interface on this instance
-     */
-    public R implement(Class<?> iface) {
-        interfaces.add(iface);
-        return this;
-    }
-
-    /**
-     * implement an interface on this instance by class name
-     */
-    public R implement(String iface) {
-        try {
-            implement(Class.forName(iface));
-        } catch (ClassNotFoundException e) {
-            throw new RuntimeException(e);
-        }
         return this;
     }
 
@@ -190,9 +172,20 @@ public class R {
     }
 
     /**
-     * Instantiates an object that implements all the interfaces injected by {@link me.mrnavastar.r.R#implement(Class)}
+     * Instantiates an object that implements the passed in interface
      */
-    public Object interfaceable() {
-        return Proxy.newProxyInstance(R.class.getClassLoader(), interfaces.toArray(new Class[]{}), (proxy, method, args) -> callAndReturn(method.getName(), args));
+    public Object implement(Class<?> iface) {
+        return Proxy.newProxyInstance(R.class.getClassLoader(), new Class[]{iface}, (proxy, method, args) -> callAndReturn(method.getName(), args));
+    }
+
+    /**
+     * Instantiates an object that implements the passed in interface class name
+     */
+    public Object implement(String iface) {
+        try {
+            return implement(Class.forName(iface));
+        } catch (ClassNotFoundException e) {
+            throw new RuntimeException(e);
+        }
     }
 }
