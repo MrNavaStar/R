@@ -61,36 +61,51 @@ public class R {
 
     // Search super classes for field
     private Field findField(String name, Class<?> clazz) {
-        if (clazz == null) throw new RuntimeException("no field with name: " + name);
+        String cacheKey = clazz.getName() + name;
 
-        return fieldCache.computeIfAbsent(this.clazz.getName() + name, key -> {
+        Field cached = fieldCache.get(cacheKey);
+        if (cached != null) return cached;
+
+        Class<?> current = clazz;
+        while (current != null) {
             try {
-                Field f = clazz.getDeclaredField(name);
+                Field f = current.getDeclaredField(name);
                 f.setAccessible(true);
+                fieldCache.put(cacheKey, f);
                 return f;
-            } catch (NoSuchFieldException e) {
-                return findField(name, clazz.getSuperclass());
+            } catch (NoSuchFieldException ignored) {
+                current = current.getSuperclass();
             }
-        });
+        }
+
+        throw new RuntimeException("no field with name: " + name);
     }
+
 
     // Search super classes for methods
     private Method findMethod(String name, Class<?> clazz, Class<?>[] argTypes) {
-        if (clazz == null) throw new RuntimeException("no method with name: " + name + " and args: " + Arrays.toString(argTypes));
+        StringBuilder keyBuilder = new StringBuilder(clazz.getName()).append(name);
+        for (Class<?> arg : argTypes) keyBuilder.append(":").append(arg.getName());
+        String cacheKey = keyBuilder.toString();
 
-        StringBuilder cacheKey = new StringBuilder(this.clazz.getName() + name);
-        for (Class<?> arg : argTypes) cacheKey.append(arg.getName());
+        Method cached = methodCache.get(cacheKey);
+        if (cached != null) return cached;
 
-        return methodCache.computeIfAbsent(cacheKey.toString(), key -> {
+        Class<?> current = clazz;
+        while (current != null) {
             try {
-                Method m = clazz.getDeclaredMethod(name, argTypes);
+                Method m = current.getDeclaredMethod(name, argTypes);
                 m.setAccessible(true);
+                methodCache.put(cacheKey, m);
                 return m;
-            } catch (NoSuchMethodException e) {
-                return findMethod(name, clazz.getSuperclass(), argTypes);
+            } catch (NoSuchMethodException ignored) {
+                current = current.getSuperclass();
             }
-        });
+        }
+
+        throw new RuntimeException("no method with name: " + name + " and args: " + Arrays.toString(argTypes));
     }
+
 
     /**
      * Get the value of a field. Can be private or static
