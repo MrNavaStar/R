@@ -7,6 +7,39 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class R {
 
+    public static class TypeBinding {
+
+        private final Class<?> type;
+        private final Object instance;
+
+        private TypeBinding(Class<?> type, Object instance) {
+            this.type = type;
+            this.instance = instance;
+        }
+
+        /**
+         * Create a type binding for an object. Useful for mapping objects to a specific interface when using {@link me.mrnavastar.r.R#call(String, Object...)}
+         */
+        public static TypeBinding of(Class<?> type, Object instance) {
+            return new TypeBinding(type, instance);
+        }
+
+        /**
+         * Create a type binding for an object by class name. Useful for mapping objects to a specific interface when using {@link me.mrnavastar.r.R#call(String, Object...)}
+         */
+        public static TypeBinding of(String className, Object instance) {
+            try {
+                return new TypeBinding(Class.forName(className), instance);
+            } catch (ClassNotFoundException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        public Object getInstance() {
+            return instance;
+        }
+    }
+
     private static boolean oldJavaCompat = false;
     static {
         try {
@@ -21,12 +54,12 @@ public class R {
     private final Object instance;
     private final Class<?> clazz;
 
-    public R(Object instance) {
+    private R(Object instance) {
         this.instance = instance;
         clazz = instance.getClass();
     }
 
-    public R(Class<?> clazz) {
+    private R(Class<?> clazz) {
         instance = null;
         this.clazz = clazz;
     }
@@ -135,14 +168,16 @@ public class R {
         return this;
     }
 
-    //TODO: The way proxies are implemented means you can't call a function that takes a proxy as an arg (but maybe that doesn't matter?)
     private Object callAndReturn(String name, Object... args) {
         try {
             Class<?>[] classes = Arrays.stream(args).map(object -> {
-                if (object instanceof Proxy) return object.getClass().getInterfaces()[0];
+                if (object instanceof TypeBinding) return ((TypeBinding) object).type;
                 return object.getClass();
             }).toArray(Class[]::new);
-            return findMethod(name, clazz, classes).invoke(instance, args);
+            return findMethod(name, clazz, classes).invoke(instance, Arrays.stream(args).map(object -> {
+                if (object instanceof TypeBinding) return ((TypeBinding) object).getInstance();
+                return object;
+            }));
         } catch (IllegalAccessException | InvocationTargetException e) {
             throw new RuntimeException(e);
         }
@@ -189,14 +224,14 @@ public class R {
     /**
      * Instantiates an object that implements the passed in interface
      */
-    public Object implement(Class<?> iface) {
-        return Proxy.newProxyInstance(R.class.getClassLoader(), new Class[]{iface}, (proxy, method, args) -> callAndReturn(method.getName(), args));
+    public TypeBinding implement(Class<?> iface) {
+        return TypeBinding.of(iface, Proxy.newProxyInstance(R.class.getClassLoader(), new Class[]{iface}, (proxy, method, args) -> callAndReturn(method.getName(), args)));
     }
 
     /**
      * Instantiates an object that implements the passed in interface class name
      */
-    public Object implement(String iface) {
+    public TypeBinding implement(String iface) {
         try {
             return implement(Class.forName(iface));
         } catch (ClassNotFoundException e) {
