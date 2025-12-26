@@ -177,7 +177,7 @@ public class R {
             return findMethod(name, clazz, classes).invoke(instance, Arrays.stream(args).map(object -> {
                 if (object instanceof TypeBinding) return ((TypeBinding) object).getInstance();
                 return object;
-            }));
+            }).toArray());
         } catch (IllegalAccessException | InvocationTargetException e) {
             throw new RuntimeException(e);
         }
