@@ -102,10 +102,10 @@ public class R {
         Class<?> current = clazz;
         while (current != null) {
             try {
-                Field f = current.getDeclaredField(name);
-                f.setAccessible(true);
-                fieldCache.put(cacheKey, f);
-                return f;
+                Field field = current.getField(name);
+                field.setAccessible(true);
+                fieldCache.put(cacheKey, field);
+                return field;
             } catch (NoSuchFieldException ignored) {
                 current = current.getSuperclass();
             }
@@ -127,18 +127,34 @@ public class R {
         Class<?> current = clazz;
         while (current != null) {
             try {
-                Method m = current.getDeclaredMethod(name, argTypes);
-                m.setAccessible(true);
-                methodCache.put(cacheKey, m);
-                return m;
+                Method method = current.getMethod(name, argTypes);
+                method.setAccessible(true);
+                methodCache.put(cacheKey, method);
+                return method;
             } catch (NoSuchMethodException ignored) {
+                // Preform slow lookup for methods where parameter types are implicitly cast
+                for (Method method : (Method[]) Arrays.stream(current.getMethods()).filter(m -> m.getName().equals(name)).toArray()) {
+                    for (int i = 0; i < method.getParameterCount(); i++) {
+                        try {
+                            argTypes[i].cast(method.getParameterTypes()[i]);
+                        } catch (ClassCastException e) {
+                            break;
+                        }
+
+                        if (i == method.getParameterCount() - 1) {
+                            method.setAccessible(true);
+                            methodCache.put(cacheKey, method);
+                            return method;
+                        }
+                    }
+                }
+
                 current = current.getSuperclass();
             }
         }
 
         throw new RuntimeException("no method with name: " + name + " and args: " + Arrays.toString(argTypes));
     }
-
 
     /**
      * Get the value of a field. Can be private or static
